@@ -1,6 +1,6 @@
 [project]
 name = "fcp-core"
-version = "0.1.13"
+version = "0.1.14"
 description = "File Context Protocol — reusable framework for building MCP servers that let LLMs interact with complex file formats"
 requires-python = ">=3.11,<3.14"
 dependencies = [

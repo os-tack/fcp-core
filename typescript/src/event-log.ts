@@ -33,6 +33,15 @@ export class EventLog<T> {
   private checkpoints = new Map<string, number>();
 
   /**
+   * Clear all events, reset cursor, and remove all checkpoints.
+   */
+  clear(): void {
+    this.events = [];
+    this._cursor = 0;
+    this.checkpoints.clear();
+  }
+
+  /**
    * Append an event, truncating any redo history beyond the cursor.
    */
   append(event: T): void {

@@ -47,6 +47,8 @@ export interface FcpDomainAdapter<Model, Event> {
   reverseEvent(event: Event, model: Model): void;
   /** Replay a single event (for redo). */
   replayEvent(event: Event, model: Model): void;
+  /** Optional: return a human-readable model summary for the MCP resource. */
+  getModelSummary?(model: Model): string;
 }
 
 /**
@@ -125,6 +127,12 @@ export function createFcpServer<Model, Event>(
     version: "0.1.0",
   });
 
+  // ── Logging helper ──────────────────────────────────────
+  const logger = `fcp-${domain}`;
+  function log(level: "debug" | "info" | "warning" | "error", message: string, data?: Record<string, unknown>) {
+    server.sendLoggingMessage({ level, logger, data: { message, ...data } }).catch(() => {});
+  }
+
   // ── Primary mutation tool ──────────────────────────────
   server.tool(
     domain,
@@ -161,6 +169,7 @@ export function createFcpServer<Model, Event>(
       for (const opStr of expandedOps) {
         const parsed = parseOp(opStr, isPositional);
         if (isParseError(parsed)) {
+          log("warning", `Parse error: ${parsed.error}`, { op: opStr });
           lines.push(`ERROR: ${parsed.error}`);
           hasErrors = true;
           continue;
@@ -171,6 +180,7 @@ export function createFcpServer<Model, Event>(
         if (!spec) {
           const suggestion = suggest(parsed.verb, verbs.map((v) => v.verb));
           const msg = `unknown verb "${parsed.verb}"`;
+          log("warning", msg, { op: opStr, suggestion: suggestion ?? undefined });
           lines.push(suggestion ? `ERROR: ${msg}\n  try: ${suggestion}` : `ERROR: ${msg}`);
           hasErrors = true;
           continue;
@@ -236,6 +246,7 @@ export function createFcpServer<Model, Event>(
       ),
     },
     async ({ action }) => {
+      log("info", `Session: ${action}`);
       const text = await session.dispatch(action);
       const model = session.model;
       const digest = model ? adapter.getDigest(model) : "";
@@ -254,5 +265,51 @@ export function createFcpServer<Model, Event>(
     },
   );
 
+  // ── Resources ─────────────────────────────────────────
+  server.resource(
+    "session-status",
+    `fcp://${domain}/session`,
+    { description: `Current ${domain} session state`, mimeType: "text/plain" },
+    async (uri) => ({
+      contents: [{
+        uri: uri.href,
+        mimeType: "text/plain",
+        text: buildSessionResource(session, adapter, domain),
+      }],
+    }),
+  );
+
+  if (adapter.getModelSummary) {
+    const getModelSummary = adapter.getModelSummary.bind(adapter);
+    server.resource(
+      "model-overview",
+      `fcp://${domain}/model`,
+      { description: `Current ${domain} model contents`, mimeType: "text/plain" },
+      async (uri) => ({
+        contents: [{
+          uri: uri.href,
+          mimeType: "text/plain",
+          text: session.model ? getModelSummary(session.model) : "No model loaded.",
+        }],
+      }),
+    );
+  }
+
   return server;
+}
+
+function buildSessionResource<Model, Event>(
+  session: SessionDispatcher<Model, Event>,
+  adapter: FcpDomainAdapter<Model, Event>,
+  domain: string,
+): string {
+  if (!session.model) {
+    return `No ${domain} session active.`;
+  }
+  const lines: string[] = [];
+  if (session.filePath) {
+    lines.push(`File: ${session.filePath}`);
+  }
+  lines.push(`State: ${adapter.getDigest(session.model)}`);
+  return lines.join("\n");
 }

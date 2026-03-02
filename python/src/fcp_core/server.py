@@ -6,6 +6,7 @@ Embeds the reference card in the main tool description.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any, Callable, Generic, Protocol, TypeVar
 
@@ -193,6 +194,7 @@ def create_fcp_server(
     )
 
     mcp = FastMCP(**kwargs)
+    log = logging.getLogger(f"fcp-{domain}")
 
     # Build tool description with embedded reference card
     tool_description = _build_tool_description(domain, registry, extra_sections)
@@ -222,6 +224,7 @@ def create_fcp_server(
         for i, op_str in enumerate(ops):
             parsed = parse_op(op_str, is_positional=is_positional)
             if isinstance(parsed, ParseError):
+                log.warning("Parse error: %s (op: %s)", parsed.error, op_str)
                 if snapshot is not None:
                     adapter.restore_snapshot(session.model, snapshot)
                     msg = (
@@ -236,6 +239,7 @@ def create_fcp_server(
             result = adapter.dispatch_op(parsed, session.model, session.event_log)
 
             if not result.success and result.message and snapshot is not None:
+                log.warning("Batch rollback at op %d: %s — %s", i + 1, op_str, result.message)
                 adapter.restore_snapshot(session.model, snapshot)
                 msg = (
                     f"! Batch failed at op {i + 1}: {op_str}. "
@@ -248,7 +252,9 @@ def create_fcp_server(
             if formatted.strip():
                 results.append(formatted)
 
-        return TextContent(type="text", text="\n".join(results))
+        body = "\n".join(results)
+        digest = adapter.get_digest(session.model)
+        return TextContent(type="text", text=f"{body}\n{digest}" if digest else body)
 
     @mcp.tool(name=f"{domain}_query", structured_output=False)
     def execute_query(q: str) -> TextContent:
@@ -260,11 +266,52 @@ def create_fcp_server(
     @mcp.tool(name=f"{domain}_session", structured_output=False)
     def execute_session(action: str) -> TextContent:
         f"""Session: 'new "Title"', 'open ./file', 'save', 'checkpoint v1', 'undo', 'redo'"""
-        return TextContent(type="text", text=session.dispatch(action))
+        log.info("Session: %s", action)
+        text = session.dispatch(action)
+        if session.model is not None:
+            digest = adapter.get_digest(session.model)
+            text = f"{text}\n{digest}" if digest else text
+        return TextContent(type="text", text=text)
 
     @mcp.tool(name=f"{domain}_help", structured_output=False)
     def get_help() -> str:
         f"""Returns the {domain} reference card with all syntax."""
         return reference_card
 
+    # ── Resources ────────────────────────────────────────
+    @mcp.resource(
+        uri=f"fcp://{domain}/session",
+        name="session-status",
+        description=f"Current {domain} session state",
+        mime_type="text/plain",
+    )
+    def read_session() -> str:
+        return _build_session_resource(session, adapter, domain)
+
+    get_model_summary = getattr(adapter, "get_model_summary", None)
+    if get_model_summary:
+        @mcp.resource(
+            uri=f"fcp://{domain}/model",
+            name="model-overview",
+            description=f"Current {domain} model contents",
+            mime_type="text/plain",
+        )
+        def read_model() -> str:
+            return get_model_summary(session.model) if session.model else "No model loaded."
+
     return mcp
+
+
+def _build_session_resource(
+    session: SessionDispatcher,
+    adapter: FcpDomainAdapter,
+    domain: str,
+) -> str:
+    """Build the session status resource text."""
+    if session.model is None:
+        return f"No {domain} session active."
+    lines: list[str] = []
+    if session.file_path:
+        lines.append(f"File: {session.file_path}")
+    lines.append(f"State: {adapter.get_digest(session.model)}")
+    return "\n".join(lines)

@@ -69,10 +69,10 @@ export class SessionDispatcher<Model, Event> {
           params["title"] = positionals[0];
         }
         this._model = this.hooks.onNew(params);
+        this.eventLog.clear();
         this._filePath = null;
         const title = params["title"] ?? "Untitled";
-        const digest = this.hooks.getDigest(this._model);
-        return `new "${title}" created. ${digest}`;
+        return `new "${title}" created.`;
       }
 
       case "open": {
@@ -80,9 +80,9 @@ export class SessionDispatcher<Model, Event> {
         if (!path) return "open requires a file path";
         try {
           this._model = await this.hooks.onOpen(path);
+          this.eventLog.clear();
           this._filePath = path;
-          const digest = this.hooks.getDigest(this._model);
-          return `opened "${path}". ${digest}`;
+          return `opened "${path}".`;
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : String(e);
           return `error: ${msg}`;

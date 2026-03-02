@@ -36,7 +36,7 @@ describe("SessionDispatcher", () => {
     it("creates a new model with title", async () => {
       const { session, hooks } = createMockSession();
       const result = await session.dispatch('new "My Song"');
-      expect(result).toBe('new "My Song" created. [My Song: 0 items]');
+      expect(result).toBe('new "My Song" created.');
       expect(session.model).not.toBeNull();
       expect(session.model?.title).toBe("My Song");
       expect(hooks.onNew).toHaveBeenCalledWith({ title: "My Song" });
@@ -51,7 +51,7 @@ describe("SessionDispatcher", () => {
     it("defaults to Untitled", async () => {
       const { session } = createMockSession();
       const result = await session.dispatch("new");
-      expect(result).toBe('new "Untitled" created. [Untitled: 0 items]');
+      expect(result).toBe('new "Untitled" created.');
     });
 
     it("clears file path", async () => {
@@ -65,7 +65,7 @@ describe("SessionDispatcher", () => {
     it("opens a file and sets model", async () => {
       const { session, hooks } = createMockSession();
       const result = await session.dispatch("open ./test.mid");
-      expect(result).toBe('opened "./test.mid". [./test.mid: 1 items]');
+      expect(result).toBe('opened "./test.mid".');
       expect(session.model).not.toBeNull();
       expect(session.filePath).toBe("./test.mid");
       expect(hooks.onOpen).toHaveBeenCalledWith("./test.mid");

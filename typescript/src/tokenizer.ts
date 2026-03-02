@@ -33,6 +33,17 @@ export function tokenizeWithMeta(input: string): TokenMeta[] {
           if (next === "n") {
             token += "\n";
             i += 2;
+          } else if (next === "u") {
+            // \uXXXX — read 4 hex digits
+            const hex = input.slice(i + 2, i + 6);
+            if (hex.length === 4 && /^[0-9a-fA-F]{4}$/.test(hex)) {
+              token += String.fromCharCode(parseInt(hex, 16));
+              i += 6;
+            } else {
+              // Invalid hex — pass through literally
+              token += "\\u";
+              i += 2;
+            }
           } else {
             i++;
             token += input[i];
@@ -59,6 +70,17 @@ export function tokenizeWithMeta(input: string): TokenMeta[] {
               if (next === "n") {
                 token += "\n";
                 i += 2;
+              } else if (next === "u") {
+                // \uXXXX — read 4 hex digits
+                const hex = input.slice(i + 2, i + 6);
+                if (hex.length === 4 && /^[0-9a-fA-F]{4}$/.test(hex)) {
+                  token += String.fromCharCode(parseInt(hex, 16));
+                  i += 6;
+                } else {
+                  // Invalid hex — pass through literally
+                  token += "\\u";
+                  i += 2;
+                }
               } else {
                 i++;
                 token += input[i];
@@ -78,8 +100,8 @@ export function tokenizeWithMeta(input: string): TokenMeta[] {
           i++;
         }
       }
-      // Convert literal \n in unquoted tokens to actual newlines
-      tokens.push({ text: token.replace(/\\n/g, "\n"), wasQuoted: false });
+      // Convert literal \n and \uXXXX in unquoted tokens
+      tokens.push({ text: token.replace(/\\n/g, "\n").replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16))), wasQuoted: false });
     }
   }
 

@@ -96,6 +96,18 @@ class TestTokenize:
         result = tokenize('label:"Line1\\nLine2"')
         assert result == ['label:"Line1\nLine2"']
 
+    def test_unicode_escape_in_quoted_string(self):
+        assert tokenize('"em dash \\u2014 here"') == ["em dash \u2014 here"]
+
+    def test_unicode_escape_at_start_of_quoted_string(self):
+        assert tokenize('"\\u00A9 2026"') == ["\u00A9 2026"]
+
+    def test_invalid_unicode_escape_passthrough(self):
+        assert tokenize('"\\u00GZ"') == ["\\u00GZ"]
+
+    def test_unicode_escape_in_unquoted_token(self):
+        assert tokenize("Copyright\\u00A92026") == ["Copyright\u00A92026"]
+
     def test_unclosed_quote_raises(self):
         with pytest.raises(ValueError):
             tokenize('add svc "unclosed')
@@ -250,3 +262,8 @@ class TestTokenizeWithMeta:
         meta_texts = [t.text for t in tokenize_with_meta(op)]
         plain_texts = tokenize(op)
         assert meta_texts == plain_texts
+
+    def test_unicode_escape_in_quoted_string(self):
+        result = tokenize_with_meta('"\\u00A9 2026"')
+        assert len(result) == 1
+        assert result[0] == TokenMeta(text="\u00A9 2026", was_quoted=True)

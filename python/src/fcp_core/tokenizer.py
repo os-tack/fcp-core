@@ -43,6 +43,16 @@ def _consume_quoted(s: str, i: int, quote_char: str) -> tuple[str, int]:
             if nxt == "n":
                 buf.append("\n")
                 i += 2
+            elif nxt == "u":
+                # \uXXXX — read 4 hex digits
+                hex_str = s[i + 2 : i + 6]
+                if len(hex_str) == 4 and all(c in "0123456789abcdefABCDEF" for c in hex_str):
+                    buf.append(chr(int(hex_str, 16)))
+                    i += 6
+                else:
+                    # Invalid hex — pass through literally
+                    buf.append("\\u")
+                    i += 2
             else:
                 # \" → " , \\ → \ , \x → x
                 buf.append(nxt)
@@ -107,6 +117,18 @@ def tokenize_with_meta(op_string: str) -> list[TokenMeta]:
                             if nxt == "n":
                                 buf.append("\n")
                                 i += 2
+                            elif nxt == "u":
+                                # \uXXXX — read 4 hex digits
+                                hex_str = op_string[i + 2 : i + 6]
+                                if len(hex_str) == 4 and all(
+                                    c in "0123456789abcdefABCDEF" for c in hex_str
+                                ):
+                                    buf.append(chr(int(hex_str, 16)))
+                                    i += 6
+                                else:
+                                    # Invalid hex — pass through literally
+                                    buf.append("\\u")
+                                    i += 2
                             else:
                                 buf.append(nxt)
                                 i += 2
@@ -119,8 +141,9 @@ def tokenize_with_meta(op_string: str) -> list[TokenMeta]:
                 else:
                     buf.append(ch)
                     i += 1
-            # Convert literal \n in unquoted tokens to actual newlines
+            # Convert literal \n and \uXXXX in unquoted tokens
             text = "".join(buf).replace("\\n", "\n")
+            text = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), text)
             tokens.append(TokenMeta(text=text, was_quoted=False))
 
     return tokens

@@ -89,6 +89,22 @@ describe("tokenize", () => {
   it("handles key:value with colons in value", () => {
     expect(tokenize("url:http://example.com")).toEqual(["url:http://example.com"]);
   });
+
+  it("handles unicode escape \\uXXXX in quoted strings", () => {
+    expect(tokenize('"em dash \\u2014 here"')).toEqual(["em dash \u2014 here"]);
+  });
+
+  it("handles unicode escape \\uXXXX at start of quoted string", () => {
+    expect(tokenize('"\\u00A9 2026"')).toEqual(["\u00A9 2026"]);
+  });
+
+  it("passes through invalid unicode escape literally", () => {
+    expect(tokenize('"\\u00GZ"')).toEqual(["\\u00GZ"]);
+  });
+
+  it("handles unicode escape \\uXXXX in unquoted tokens", () => {
+    expect(tokenize("Copyright\\u00A92026")).toEqual(["Copyright\u00A92026"]);
+  });
 });
 
 describe("isKeyValue", () => {
@@ -297,5 +313,11 @@ describe("tokenizeWithMeta", () => {
     const metaTexts = tokenizeWithMeta(op).map(t => t.text);
     const plainTexts = tokenize(op);
     expect(metaTexts).toEqual(plainTexts);
+  });
+
+  it("handles unicode escape in quoted strings", () => {
+    const result = tokenizeWithMeta('"\\u00A9 2026"');
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({ text: "\u00A9 2026", wasQuoted: true });
   });
 });

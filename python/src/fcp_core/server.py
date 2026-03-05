@@ -149,6 +149,7 @@ def create_fcp_server(
     *,
     extra_sections: dict[str, str] | None = None,
     is_positional: Callable[[str], bool] | None = None,
+    extensions: list[str] | None = None,
     **kwargs,
 ) -> FastMCP:
     """Create a fully wired MCP server for the given domain.
@@ -299,6 +300,17 @@ def create_fcp_server(
         )
         def read_model() -> str:
             return get_model_summary(session.model) if session.model else "No model loaded."
+
+    if extensions is not None:
+        from fcp_core.bridge import connect_to_slipstream
+        connect_to_slipstream(
+            domain=domain,
+            extensions=extensions,
+            adapter=adapter,
+            session=session,
+            registry=registry,
+            is_positional=is_positional,
+        )
 
     return mcp
 

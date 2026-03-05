@@ -42,3 +42,6 @@ export {
   type OpResult,
   type QueryResult,
 } from "./server.js";
+
+// Bridge
+export { connectToSlipstream } from "./bridge.js";

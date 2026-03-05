@@ -26,7 +26,7 @@ export class SessionDispatcher<Model, Event> {
   private _model: Model | null = null;
   private _filePath: string | null = null;
   private hooks: SessionHooks<Model>;
-  private eventLog: EventLog<Event>;
+  readonly eventLog: EventLog<Event>;
   private reverseEvent: (event: Event, model: Model) => void;
   private replayEvent: (event: Event, model: Model) => void;
 

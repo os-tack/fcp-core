@@ -7,6 +7,7 @@ import { VerbRegistry } from "./verb-registry.js";
 import type { VerbSpec } from "./verb-registry.js";
 import { SessionDispatcher, type SessionHooks } from "./session.js";
 import { formatResult, suggest } from "./formatter.js";
+import { connectToSlipstream } from "./bridge.js";
 
 /**
  * Result of executing a single operation.
@@ -69,6 +70,8 @@ export interface FcpServerConfig<Model, Event> {
    * instead of key:value (e.g. column ranges like B:G).
    */
   isPositional?: (token: string) => boolean;
+  /** File extensions this domain handles (e.g., ["drawio"]). Enables Slipstream bridge. */
+  extensions?: string[];
 }
 
 /**
@@ -308,6 +311,17 @@ export function createFcpServer<Model, Event>(
         }],
       }),
     );
+  }
+
+  if (config.extensions) {
+    connectToSlipstream({
+      domain,
+      extensions: config.extensions,
+      adapter,
+      session,
+      registry,
+      isPositional,
+    });
   }
 
   return server;

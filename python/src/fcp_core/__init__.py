@@ -3,6 +3,7 @@
 from fcp_core.event_log import CheckpointEvent, EventLog
 from fcp_core.formatter import format_result, suggest
 from fcp_core.parsed_op import ParseError, ParsedOp, parse_op
+from fcp_core.bridge import connect_to_slipstream
 from fcp_core.server import FcpDomainAdapter, OpResult, create_fcp_server
 from fcp_core.session import SessionDispatcher, SessionHooks
 from fcp_core.tokenizer import (
@@ -45,4 +46,5 @@ __all__ = [
     "FcpDomainAdapter",
     "OpResult",
     "create_fcp_server",
+    "connect_to_slipstream",
 ]

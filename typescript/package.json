@@ -1,6 +1,6 @@
 {
   "name": "@aetherwing/fcp-core",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "File Context Protocol — reusable framework for building MCP servers",
   "license": "MIT",
   "repository": {

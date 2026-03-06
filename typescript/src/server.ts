@@ -72,6 +72,8 @@ export interface FcpServerConfig<Model, Event> {
   isPositional?: (token: string) => boolean;
   /** File extensions this domain handles (e.g., ["drawio"]). Enables Slipstream bridge. */
   extensions?: string[];
+  /** Optional instructions for LLM clients (MCP ServerInfo.instructions). */
+  instructions?: string;
 }
 
 /**
@@ -126,10 +128,15 @@ export function createFcpServer<Model, Event>(
   });
 
   // MCP server
-  const server = new McpServer({
-    name: `fcp-${domain}`,
-    version: "0.1.0",
-  });
+  const server = new McpServer(
+    {
+      name: `fcp-${domain}`,
+      version: "0.1.0",
+    },
+    {
+      instructions: config.instructions,
+    },
+  );
 
   // ── Logging helper ──────────────────────────────────────
   const logger = `fcp-${domain}`;

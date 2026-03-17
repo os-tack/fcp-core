@@ -20,3 +20,5 @@ jobs:
       - run: cd typescript && npm run build
       - run: cd typescript && npm test
       - run: cd typescript && npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_SECRET }}

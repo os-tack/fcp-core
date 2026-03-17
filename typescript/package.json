@@ -1,11 +1,11 @@
 {
-  "name": "@aetherwing/fcp-core",
-  "version": "0.1.18",
+  "name": "@os-tack/fcp-core",
+  "version": "0.1.19",
   "description": "File Context Protocol — reusable framework for building MCP servers",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aetherwing-io/fcp-core"
+    "url": "https://github.com/os-tack/fcp-core"
   },
   "keywords": [
     "fcp",

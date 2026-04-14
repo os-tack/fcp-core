@@ -1,5 +1,5 @@
 {
-  "name": "@os-tack/fcp-core",
+  "name": "@ostk-ai/fcp-core",
   "version": "0.1.20",
   "description": "File Context Protocol — reusable framework for building MCP servers",
   "license": "MIT",
